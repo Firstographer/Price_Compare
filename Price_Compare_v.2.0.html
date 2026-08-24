@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เทียบราคาสินค้า (Smart)</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary: #007aff;
+            --success: #34c759;
+            --text-main: #1d1d1f;
+            --text-muted: #86868b;
+            --border: #d2d2d7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px 16px 110px 16px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .header-btns {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: none;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-add { color: var(--success); }
+        .btn-clear { color: var(--primary); }
+
+        #productContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .product-card.winner {
+            border-color: var(--success);
+            background-color: #f2fbf4;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            align-items: center;
+        }
+
+        .winner-badge {
+            display: none;
+            color: var(--success);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .product-card.winner .winner-badge {
+            display: inline-block;
+        }
+
+        .btn-del {
+            background: none;
+            border: none;
+            color: #ff3b30;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group.full {
+            grid-column: span 2;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+            background: #fff;
+            text-align: center;
+        }
+
+        /* ปุ่มเลือกหน่วยแบบใหม่ (Unit Selector Chips) กดง่ายบนมือถือ */
+        .unit-selector {
+            display: flex;
+            gap: 4px;
+            background: #e5e5ea;
+            padding: 3px;
+            border-radius: 10px;
+        }
+
+        .unit-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px 0;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .unit-btn.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .unit-price-display {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: right;
+            min-height: 18px;
+        }
+
+        .product-card.winner .unit-price-display {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* แถบสรุปผลด้านล่าง */
+        .sticky-result {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 14px 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            border-top: 1px solid #eee;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .sticky-result.show {
+            transform: translateY(0);
+        }
+
+        .sticky-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .best-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .best-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        .promo-hint {
+            font-size: 11px;
+            color: #ff9500;
+            grid-column: span 2;
+            margin-top: -2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>เทียบราคา</h2>
+        <div class="header-btns">
+            <button class="btn-action btn-add" onclick="addNewCardUser()">+ เพิ่มสินค้า</button>
+            <button class="btn-action btn-clear" onclick="clearData()">เริ่มใหม่</button>
+        </div>
+    </div>
+
+    <div id="productContainer">
+        <!-- สร้างโดย JS -->
+    </div>
+
+    <div class="sticky-result" id="stickyResult">
+        <div class="sticky-content">
+            <div>
+                <div class="best-title" id="resTitle">รอข้อมูล...</div>
+                <div class="best-desc" id="resDesc">พิมพ์ตัวเลขเพื่อคำนวณทันที</div>
+            </div>
+            <div style="font-size: 28px;">🏆</div>
+        </div>
+    </div>
+
+<script>
+    const STORAGE_KEY = 'smartPriceCompareDataV2';
+    const UNIT_MULTIPLIERS = {
+        'g': 1, 'kg': 1000,
+        'ml': 1, 'L': 1000,
+        'ชิ้น': 1
+    };
+
+    let isClearing = false;
+
+    window.onload = () => {
+        loadData();
+    };
+
+    function handleInput(input) {
+        if (isClearing) return;
+        let val = input.value.replace(/[^0-9.]/g, '');
+        let parts = val.split('.');
+        if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+        input.value = val;
+        
+        saveData();
+        calculateAndHighlight();
+        checkAutoAddRow();
+    }
+
+    function setUnit(btn, unitName) {
+        const card = btn.closest('.product-card');
+        card.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        saveData();
+        calculateAndHighlight();
+    }
+
+    function checkAutoAddRow() {
+        const cards = document.querySelectorAll('.product-card');
+        const lastCard = cards[cards.length - 1];
+        const inputs = lastCard.querySelectorAll('input[type="tel"]');
+        let hasData = Array.from(inputs).some(inp => inp.value.trim() !== '');
+        
+        if (hasData) {
+            addCard(cards.length + 1);
+        }
+    }
+
+    function calculateAndHighlight() {
+        const cards = document.querySelectorAll('.product-card');
+        let products = [];
+
+        cards.forEach((card, index) => {
+            card.classList.remove('winner');
+            let displayPrice = card.querySelector('.unit-price-display');
+            displayPrice.innerHTML = '';
+
+            let volInput = parseFloat(card.querySelector('.p-vol').value);
+            let activeUnitBtn = card.querySelector('.unit-btn.active');
+            let unitSelect = activeUnitBtn ? activeUnitBtn.getAttribute('data-unit') : 'g';
+            let qtyInput = parseFloat(card.querySelector('.p-qty').value);
+            let priceInput = parseFloat(card.querySelector('.p-price').value);
+            let discountInput = parseFloat(card.querySelector('.p-discount').value) || 0; 
+
+            let qty = (isNaN(qtyInput) || qtyInput <= 0) ? 1 : qtyInput;
+            let finalPrice = priceInput - discountInput;
+
+            if (!isNaN(volInput) && !isNaN(priceInput) && volInput > 0 && finalPrice > 0) {
+                let multiplier = UNIT_MULTIPLIERS[unitSelect] || 1;
+                let totalBaseVolume = volInput * multiplier * qty;
+                let unitPrice = finalPrice / totalBaseVolume;
+
+                displayPrice.innerHTML = `ตก <b>${unitPrice.toFixed(4)}</b> บาท / 1 ${getBaseUnitName(unitSelect)}`;
+
+                products.push({
+                    cardElement: card,
+                    index: index + 1,
+                    unitPrice: unitPrice
+                });
+            }
+        });
+
+        const sticky = document.getElementById('stickyResult');
+
+        if (products.length >= 2) {
+            products.sort((a, b) => a.unitPrice - b.unitPrice);
+            let best = products[0];
+            let secondBest = products[1];
+            
+            best.cardElement.classList.add('winner');
+            let savePercent = ((secondBest.unitPrice - best.unitPrice) / secondBest.unitPrice) * 100;
+            
+            document.getElementById('resTitle').innerHTML = `✅ สินค้าที่ ${best.index} คุ้มที่สุด!`;
+            
+            if (savePercent > 0) {
+                document.getElementById('resDesc').innerHTML = `ถูกกว่าอันดับถัดไป <b>${savePercent.toFixed(1)}%</b>`;
+            } else {
+                document.getElementById('resDesc').innerHTML = `ราคาต่อหน่วยเท่ากันเป๊ะ!`;
+            }
+            sticky.classList.add('show');
+        } else {
+            sticky.classList.remove('show');
+        }
+    }
+
+    function getBaseUnitName(unit) {
+        if (['g', 'kg'].includes(unit)) return 'กรัม';
+        if (['ml', 'L'].includes(unit)) return 'มล.';
+        return 'ชิ้น';
+    }
+
+    function createCardHTML(index, data = {}) {
+        const v = data.vol || '';
+        const u = data.unit || 'g';
+        const q = data.qty || '';
+        const p = data.price || '';
+        const d = data.discount || '';
+
+        return `
+            <div class="card-header">
+                <span class="card-title">สินค้าที่ ${index}</span>
+                <span class="winner-badge">★ คุ้มที่สุด</span>
+                <button type="button" class="btn-del" onclick="removeCard(this)">ลบ</button>
+            </div>
+            <div class="input-grid">
+                <div class="input-group full">
+                    <label>เลือกหน่วย</label>
+                    <div class="unit-selector">
+                        <button type="button" class="unit-btn ${u==='g'?'active':''}" data-unit="g" onclick="setUnit(this, 'g')">g</button>
+                        <button type="button" class="unit-btn ${u==='kg'?'active':''}" data-unit="kg" onclick="setUnit(this, 'kg')">kg</button>
+                        <button type="button" class="unit-btn ${u==='ml'?'active':''}" data-unit="ml" onclick="setUnit(this, 'ml')">ml</button>
+                        <button type="button" class="unit-btn ${u==='L'?'active':''}" data-unit="L" onclick="setUnit(this, 'L')">L</button>
+                        <button type="button" class="unit-btn ${u==='ชิ้น'?'active':''}" data-unit="ชิ้น" onclick="setUnit(this, 'ชิ้น')">ชิ้น</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>ปริมาตร/น้ำหนักต่อชิ้น</label>
+                    <input type="tel" inputmode="decimal" class="p-vol" placeholder="เช่น 1500" value="${v}" oninput="handleInput(this)">
+                </div>
+                
+                <div class="input-group">
+                    <label>จำนวน</label>
+                    <input type="tel" inputmode="decimal" class="p-qty" placeholder="1" value="${q}" oninput="handleInput(this)">
+                </div>
+
+                <div class="input-group">
+                    <label>ราคา (บาท)</label>
+                    <input type="tel" inputmode="decimal" class="p-price" placeholder="0" value="${p}" oninput="handleInput(this)">
+                </div>
+
+                <div class="input-group">
+                    <label>ส่วนลด (บาท) <span style="color:#aaa">*ถ้ามี</span></label>
+                    <input type="tel" inputmode="decimal" class="p-discount" placeholder="0" value="${d}" oninput="handleInput(this)">
+                </div>
+                
+                <div class="promo-hint">💡 โปร 1 แถม 1 ใส่จำนวนเป็น 2</div>
+            </div>
+            <div class="unit-price-display"></div>
+        `;
+    }
+
+    function addCard(index, data = {}) {
+        const container = document.getElementById('productContainer');
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = createCardHTML(index, data);
+        container.appendChild(card);
+        updateCardLabels();
+    }
+
+    function addNewCardUser() {
+        const cards = document.querySelectorAll('.product-card');
+        addCard(cards.length + 1);
+        saveData();
+    }
+
+    function removeCard(btn) {
+        const cards = document.querySelectorAll('.product-card');
+        if (cards.length <= 2) {
+            alert('ต้องเก็บไว้อย่างน้อย 2 สินค้าครับ');
+            return;
+        }
+        btn.closest('.product-card').remove();
+        updateCardLabels();
+        saveData();
+        calculateAndHighlight();
+    }
+
+    function updateCardLabels() {
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach((card, idx) => {
+            card.querySelector('.card-title').innerText = `สินค้าที่ ${idx + 1}`;
+        });
+    }
+
+    function saveData() {
+        if (isClearing) return;
+        const cards = document.querySelectorAll('.product-card');
+        let data = [];
+        cards.forEach(card => {
+            let vol = card.querySelector('.p-vol').value;
+            let activeUnit = card.querySelector('.unit-btn.active');
+            data.push({
+                vol: vol,
+                unit: activeUnit ? activeUnit.getAttribute('data-unit') : 'g',
+                qty: card.querySelector('.p-qty').value,
+                price: card.querySelector('.p-price').value,
+                discount: card.querySelector('.p-discount').value
+            });
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadData() {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        const container = document.getElementById('productContainer');
+        container.innerHTML = ''; 
+
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            if (data.length >= 2) {
+                data.forEach((item, idx) => addCard(idx + 1, item));
+            } else {
+                initDefaultCards();
+            }
+        } else {
+            initDefaultCards();
+        }
+        calculateAndHighlight();
+    }
+
+    function initDefaultCards() {
+        addCard(1);
+        addCard(2); // เริ่มต้นที่ 2 สินค้าเป๊ะๆ
+    }
+
+    function clearData() {
+        if (navigator.vibrate) navigator.vibrate(50);
+        isClearing = true;
+        localStorage.removeItem(STORAGE_KEY);
+        
+        const container = document.getElementById('productContainer');
+        container.innerHTML = '';
+        initDefaultCards();
+        
+        document.getElementById('stickyResult').classList.remove('show');
+        isClearing = false;
+    }
+</script>
+</body>
+</html>
